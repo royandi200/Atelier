@@ -119,7 +119,7 @@ const Hero = ({ t }: HeroProps) => {
       { backgroundPositionX: '100%', duration: 12, ease: 'none' }
     );
 
-    return () => tl.kill();
+    return () => { tl.kill(); };
   }, [isMobile, currentImageIndex]);
 
   const scrollToAbout = () => {
