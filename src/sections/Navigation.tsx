@@ -65,7 +65,7 @@ const Navigation = ({ currentLang, onLanguageChange, t }: NavigationProps) => {
               <img
                 src="/src/assets/luxury-logo.png"
                 alt="Atelier Luxury Logo"
-                className="h-12 md:h-14 w-auto hover:opacity-80 transition-opacity duration-500"
+                className="h-16 md:h-[70px] w-auto hover:opacity-80 transition-opacity duration-500"
               />
             </a>
 
