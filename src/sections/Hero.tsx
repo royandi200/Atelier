@@ -14,7 +14,6 @@ interface HeroProps {
 const projectImages = [
   '/images/nightclub-bar.jpg',
   '/images/speakeasy.jpg',
-  '/images/rooftop-nightclub.jpg',
   '/images/cocktail-lounge.jpg',
   '/images/rooftop-bar.jpg',
   '/images/sushi-restaurant.jpg',
@@ -92,7 +91,7 @@ const Hero = ({ t }: HeroProps) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % projectImages.length);
-    }, 5000); // Change image every 5 seconds
+    }, 8000); // Change image every 8 seconds
 
     return () => clearInterval(interval);
   }, []);
