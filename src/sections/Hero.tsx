@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ChevronDown, Sparkles } from 'lucide-react';
 
@@ -11,12 +11,25 @@ interface HeroProps {
   };
 }
 
+const projectImages = [
+  '/images/nightclub-bar.jpg',
+  '/images/speakeasy.jpg',
+  '/images/rooftop-nightclub.jpg',
+  '/images/cocktail-lounge.jpg',
+  '/images/beach-club.jpg',
+  '/images/rooftop-bar.jpg',
+  '/images/sushi-restaurant.jpg',
+  '/images/wine-bar.jpg',
+];
+
 const Hero = ({ t }: HeroProps) => {
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -64,6 +77,26 @@ const Hero = ({ t }: HeroProps) => {
     return () => ctx.revert();
   }, []);
 
+  // Image carousel effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % projectImages.length);
+    }, 5000); // Change image every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fade transition effect for images
+  useEffect(() => {
+    if (!imageRef.current) return;
+
+    gsap.to(imageRef.current, {
+      opacity: 1,
+      duration: 1.5,
+      ease: 'power2.inOut',
+    });
+  }, [currentImageIndex]);
+
   const scrollToAbout = () => {
     const aboutSection = document.querySelector('#about');
     if (aboutSection) {
@@ -76,12 +109,14 @@ const Hero = ({ t }: HeroProps) => {
       ref={heroRef}
       className="relative h-screen w-full overflow-hidden flex items-center justify-center"
     >
-      {/* Background Image */}
-      <div className="hero-bg absolute inset-0 w-full h-full">
+      {/* Background Image Carousel */}
+      <div className="hero-bg absolute inset-0 w-full h-full overflow-hidden">
         <img
-          src="/images/nightclub-bar.jpg"
-          alt="Luxury Nightclub Interior"
-          className="w-full h-full object-cover scale-110"
+          ref={imageRef}
+          key={`hero-image-${currentImageIndex}`}
+          src={projectImages[currentImageIndex]}
+          alt="Luxury Project"
+          className="w-full h-full object-cover scale-110 opacity-0"
         />
       </div>
 
