@@ -117,11 +117,11 @@ const Hero = ({ t }: HeroProps) => {
     tl.fromTo(
       imageContainerRef.current,
       { backgroundPositionX: '0%' },
-      { backgroundPositionX: '-50%', duration: 8, ease: 'none' }
+      { backgroundPositionX: '100%', duration: 12, ease: 'none' }
     );
 
     return () => tl.kill();
-  }, [isMobile]);
+  }, [isMobile, currentImageIndex]);
 
   const scrollToAbout = () => {
     const aboutSection = document.querySelector('#about');
@@ -141,7 +141,7 @@ const Hero = ({ t }: HeroProps) => {
         className="hero-bg absolute inset-0 w-full h-full overflow-hidden md:overflow-visible"
         style={isMobile ? {
           backgroundImage: `url(${projectImages[currentImageIndex]})`,
-          backgroundSize: '150%',
+          backgroundSize: 'cover',
           backgroundPosition: '0% center',
           backgroundRepeat: 'no-repeat',
         } : {}}
