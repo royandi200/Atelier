@@ -16,7 +16,6 @@ const projectImages = [
   '/images/speakeasy.jpg',
   '/images/rooftop-nightclub.jpg',
   '/images/cocktail-lounge.jpg',
-  '/images/beach-club.jpg',
   '/images/rooftop-bar.jpg',
   '/images/sushi-restaurant.jpg',
   '/images/wine-bar.jpg',
@@ -29,7 +28,19 @@ const Hero = ({ t }: HeroProps) => {
   const ctaRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -97,6 +108,21 @@ const Hero = ({ t }: HeroProps) => {
     });
   }, [currentImageIndex]);
 
+  // Mobile horizontal pan animation
+  useEffect(() => {
+    if (!isMobile || !imageContainerRef.current) return;
+
+    const tl = gsap.timeline({ repeat: -1 });
+    
+    tl.fromTo(
+      imageContainerRef.current,
+      { backgroundPositionX: '0%' },
+      { backgroundPositionX: '-50%', duration: 8, ease: 'none' }
+    );
+
+    return () => tl.kill();
+  }, [isMobile]);
+
   const scrollToAbout = () => {
     const aboutSection = document.querySelector('#about');
     if (aboutSection) {
@@ -110,14 +136,25 @@ const Hero = ({ t }: HeroProps) => {
       className="relative h-screen w-full overflow-hidden flex items-center justify-center"
     >
       {/* Background Image Carousel */}
-      <div className="hero-bg absolute inset-0 w-full h-full overflow-hidden">
-        <img
-          ref={imageRef}
-          key={`hero-image-${currentImageIndex}`}
-          src={projectImages[currentImageIndex]}
-          alt="Luxury Project"
-          className="w-full h-full object-cover scale-110 opacity-0"
-        />
+      <div 
+        ref={imageContainerRef}
+        className="hero-bg absolute inset-0 w-full h-full overflow-hidden md:overflow-visible"
+        style={isMobile ? {
+          backgroundImage: `url(${projectImages[currentImageIndex]})`,
+          backgroundSize: '150%',
+          backgroundPosition: '0% center',
+          backgroundRepeat: 'no-repeat',
+        } : {}}
+      >
+        {!isMobile && (
+          <img
+            ref={imageRef}
+            key={`hero-image-${currentImageIndex}`}
+            src={projectImages[currentImageIndex]}
+            alt="Luxury Project"
+            className="w-full h-full object-cover scale-110 opacity-0"
+          />
+        )}
       </div>
 
       {/* Dark Overlay */}
