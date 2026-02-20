@@ -63,7 +63,7 @@ const Navigation = ({ currentLang, onLanguageChange, t }: NavigationProps) => {
             {/* Logo - MODERN & LUXURIOUS */}
             <a href="#" className="flex items-center">
               <img
-                src="/src/assets/luxury-logo.png"
+                src="/luxury-logo.png"
                 alt="Atelier Luxury Logo"
                 className="h-16 md:h-[70px] w-auto hover:opacity-80 transition-opacity duration-500"
               />
