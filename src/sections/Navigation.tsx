@@ -61,11 +61,12 @@ const Navigation = ({ currentLang, onLanguageChange, t }: NavigationProps) => {
         <div className="w-full px-6 lg:px-12 xl:px-20">
           <div className="flex items-center justify-between">
             {/* Logo - MODERN & LUXURIOUS */}
-            <a
-              href="#"
-              className="font-logo text-2xl md:text-3xl text-cream hover:text-gold transition-colors duration-500 tracking-[0.3em]"
-            >
-              ATELIER
+            <a href="#" className="flex items-center">
+              <img
+                src="/src/assets/luxury-logo.png"
+                alt="Atelier Luxury Logo"
+                className="h-12 md:h-14 w-auto hover:opacity-80 transition-opacity duration-500"
+              />
             </a>
 
             {/* Desktop Navigation */}
