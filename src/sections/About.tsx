@@ -94,8 +94,8 @@ const About = ({ t }: AboutProps) => {
           <div ref={imageRef} className="relative opacity-0">
             <div className="relative aspect-[4/5] overflow-hidden rounded-3xl">
               <img
-                src="/images/craftsmanship.jpg"
-                alt="Master Craftsman at Work"
+                src="/images/craftsmanship-modern.jpg"
+                alt="Master Craftsman Upholstering Modern Furniture"
                 className="w-full h-full object-cover"
               />
               {/* Overlay gradient */}
