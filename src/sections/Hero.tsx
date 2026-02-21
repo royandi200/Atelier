@@ -14,6 +14,7 @@ interface HeroProps {
 const projectImages = [
   '/images/nightclub-bar.jpg',
   '/images/speakeasy.jpg',
+  '/images/vibez-lounge.jpg',
   '/images/cocktail-lounge.jpg',
   '/images/rooftop-bar.jpg',
   '/images/sushi-restaurant.jpg',
