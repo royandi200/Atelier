@@ -103,6 +103,16 @@ const projects = [
     materials: ['Roble Francés', 'Latón', 'Vidrio Templado'],
     isNight: false,
   },
+  {
+    id: 9,
+    title: 'World Cup 2026 Experience',
+    category: 'Sports Bar Temático',
+    location: 'Brickell, Miami',
+    image: '/images/worldcup-2026.jpg',
+    description: 'Un sports bar diseñado exclusivamente para el Mundial de Fútbol 2026. Arco de balones iluminados, banderas internacionales, zona de portería con césped artificial y área VIP "Goal Zone" con sillones chesterfield de colores vibrantes. Pantallas múltiples y balones LED crean una atmósfera festiva y sofisticada.',
+    materials: ['Madera Rústica', 'Césped Artificial', 'LED Multicolor', 'Cuero Premium'],
+    isNight: true,
+  },
 ];
 
 const Gallery = ({ t }: GalleryProps) => {
