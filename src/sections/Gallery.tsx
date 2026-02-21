@@ -45,12 +45,12 @@ const projects = [
   },
   {
     id: 3,
-    title: 'Skyline Lounge',
-    category: 'Rooftop Nightclub',
-    location: 'Downtown Miami',
-    image: '/images/rooftop-nightclub.jpg',
-    description: 'Un rooftop que domina el skyline de Miami. Instalaciones de luces neón suspendidas, piscina infinity y áreas VIP para una experiencia nocturna inolvidable.',
-    materials: ['Mármol Blanco', 'Neón Artístico', 'Muebles Outdoor'],
+    title: 'Vibe\'z',
+    category: 'Lounge Bar',
+    location: 'Brickell, Miami',
+    image: '/images/vibez-lounge.jpg',
+    description: 'Un lounge tropical de lujo donde el terciopelo morado, las flores de glicinia y la iluminación ambiental crean una atmósfera vibrante e íntima. El bar de madera y las lámparas de mimbre añaden calidez tropical sofisticada.',
+    materials: ['Terciopelo Morado', 'Madera Tropical', 'Mimbre Artesanal'],
     isNight: true,
   },
   {
