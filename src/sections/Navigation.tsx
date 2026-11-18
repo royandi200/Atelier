@@ -11,6 +11,7 @@ interface NavigationProps {
       about: string;
       process: string;
       gallery: string;
+    showroom: string;
       materials: string;
       services: string;
       contact: string;
@@ -36,6 +37,7 @@ const Navigation = ({ currentLang, onLanguageChange, t }: NavigationProps) => {
     { label: t.nav.about, href: '#about' },
     { label: t.nav.process, href: '#process' },
     { label: t.nav.gallery, href: '#gallery' },
+    { label: t.nav.showroom, href: '#showroom' },
     { label: t.nav.materials, href: '#materials' },
     { label: t.nav.services, href: '#services' },
     { label: t.nav.contact, href: '#contact' },
