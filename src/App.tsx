@@ -81,6 +81,8 @@ function App() {
       </main>
       <Footer t={t.footer} currentLang={currentLang} />
       <WhatsAppButton />
+      <div className="fx-vignette" aria-hidden="true" />
+      <div className="fx-grain" aria-hidden="true" />
     </div>
   );
 }

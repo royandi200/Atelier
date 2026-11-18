@@ -99,17 +99,23 @@ const Showroom = ({ t }: { t: ShowroomT }) => {
             setFailed(true);
             return;
           }
+          // se arma en un momento libre del navegador, antes de llegar a la sección
+          const idle = (cb: () => void) =>
+            'requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 1200 }) : setTimeout(cb, 200);
           import('../showroom/scene')
-            .then(({ createShowroom }) => {
-              if (disposed || !canvasRef.current || apiRef.current) return;
-              apiRef.current = createShowroom(canvasRef.current, { images: IMAGES, labels: t.zones });
-              apiRef.current.setProgress(progressRef.current);
-              setReady(true);
-            })
+            .then(({ createShowroom }) =>
+              idle(() => {
+                if (disposed || !canvasRef.current || apiRef.current) return;
+                apiRef.current = createShowroom(canvasRef.current, { images: IMAGES, labels: t.zones });
+                apiRef.current.setProgress(progressRef.current);
+                apiRef.current.setVisible(on);
+                setReady(true);
+              })
+            )
             .catch(() => setFailed(true));
         }
       },
-      { rootMargin: '600px 0px' }
+      { rootMargin: '1400px 0px' }
     );
     io.observe(wrap);
     return () => {
@@ -191,7 +197,7 @@ const Showroom = ({ t }: { t: ShowroomT }) => {
         </nav>
 
         {ready && visible && (
-          <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-gold/30 bg-black/50 px-4 py-2 font-logo text-[10px] uppercase text-gold/90 backdrop-blur">
+          <p className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-gold/30 bg-black/70 px-4 py-2 font-logo text-[10px] uppercase text-gold/90">
             ⟲ {t.dragHint}
           </p>
         )}
@@ -204,7 +210,7 @@ const Showroom = ({ t }: { t: ShowroomT }) => {
           return (
           <div key={s.number} className="flex h-screen items-end justify-end px-4 pb-20 md:items-center md:px-10 md:pb-0">
             <article
-              className={`pointer-events-auto w-full max-w-md rounded-3xl border border-gold/25 bg-black/55 p-5 backdrop-blur-md transition-all duration-700 md:p-8 ${
+              className={`pointer-events-auto w-full max-w-md rounded-3xl border border-gold/25 bg-[#0b0907]/85 p-5 transition-all duration-700 md:p-8 ${
                 active === i ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-40'
               }`}
             >

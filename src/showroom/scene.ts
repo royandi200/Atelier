@@ -248,8 +248,10 @@ export interface Showroom {
 
 export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string[]; labels: Record<ZoneId, string> }): Showroom {
   const mobile = isMobile();
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile && devicePixelRatio < 2, powerPreference: 'high-performance' });
+  const maxDpr = Math.min(devicePixelRatio, mobile ? 1 : 1.5);
+  let dpr = maxDpr;
+  renderer.setPixelRatio(dpr);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -269,11 +271,11 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   /* ---- materiales ---- */
   const gold = keep(new THREE.MeshStandardMaterial({ color: '#c9a962', metalness: 1, roughness: 0.28 }));
   const brassDark = keep(new THREE.MeshStandardMaterial({ color: '#8c6b32', metalness: 1, roughness: 0.4 }));
-  const blackLacquer = keep(new THREE.MeshPhysicalMaterial({ color: '#0d0c0b', roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.1 }));
+  const blackLacquer = keep(new THREE.MeshStandardMaterial({ color: '#0d0c0b', roughness: 0.18, metalness: 0.3 }));
   const walnut = keep(new THREE.MeshStandardMaterial({ map: keep(wood('#3a2416', '#120a05', [2, 1])), roughness: 0.55 }));
   const panelWood = keep(new THREE.MeshStandardMaterial({ map: keep(wood('#24170f', '#0b0704', [6, 1], true)), roughness: 0.6 }));
-  const marbleTop = keep(new THREE.MeshPhysicalMaterial({ map: keep(marble('#ece8e1', '#6f6a60', 3, [2, 1])), roughness: 0.12, clearcoat: 0.6 }));
-  const marbleNero = keep(new THREE.MeshPhysicalMaterial({ map: keep(marble('#0f0f10', '#d8d3c7', 9, [1, 1])), roughness: 0.15, clearcoat: 0.8 }));
+  const marbleTop = keep(new THREE.MeshStandardMaterial({ map: keep(marble('#ece8e1', '#6f6a60', 3, [2, 1])), roughness: 0.14 }));
+  const marbleNero = keep(new THREE.MeshStandardMaterial({ map: keep(marble('#0f0f10', '#d8d3c7', 9, [1, 1])), roughness: 0.15 }));
   const floor = keep(new THREE.MeshStandardMaterial({ map: keep(herringbone()), roughness: 0.38, metalness: 0.05 }));
   const ceiling = keep(new THREE.MeshStandardMaterial({ color: '#0c0a08', roughness: 0.9 }));
   const wallPlaster = keep(new THREE.MeshStandardMaterial({ color: '#1b1612', roughness: 0.92 }));
@@ -282,13 +284,13 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   const channel = keep(channelBump(9));
 
   // Tapicería por zona (los colores cambian con las muestras).
-  const upholstery: Record<ZoneId, THREE.MeshPhysicalMaterial> = {
-    bar: keep(new THREE.MeshPhysicalMaterial({ color: SWATCHES.bar[0].color, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.4, bumpMap: tuft, bumpScale: 2.2 })),
-    booths: keep(new THREE.MeshPhysicalMaterial({ color: SWATCHES.booths[0].color, roughness: 0.85, sheen: 1, sheenRoughness: 0.45, sheenColor: new THREE.Color('#ffffff'), bumpMap: channel, bumpScale: 3 })),
-    lounge: keep(new THREE.MeshPhysicalMaterial({ color: SWATCHES.lounge[0].color, roughness: 0.95, sheen: 0.6, sheenRoughness: 0.8 })),
-    wine: keep(new THREE.MeshPhysicalMaterial({ color: SWATCHES.wine[0].color, roughness: 0.45, clearcoat: 0.3 })),
+  const upholstery: Record<ZoneId, THREE.MeshStandardMaterial> = {
+    bar: keep(new THREE.MeshStandardMaterial({ color: SWATCHES.bar[0].color, roughness: 0.38, bumpMap: tuft, bumpScale: 2.2 })),
+    booths: keep(new THREE.MeshStandardMaterial({ color: SWATCHES.booths[0].color, roughness: 0.7, bumpMap: channel, bumpScale: 3 })),
+    lounge: keep(new THREE.MeshStandardMaterial({ color: SWATCHES.lounge[0].color, roughness: 0.92 })),
+    wine: keep(new THREE.MeshStandardMaterial({ color: SWATCHES.wine[0].color, roughness: 0.42 })),
   };
-  const barFront = keep(new THREE.MeshPhysicalMaterial({ color: SWATCHES.bar[0].color, roughness: 0.42, clearcoat: 0.35, bumpMap: keep(tuftBump(24, 3)), bumpScale: 2.5 }));
+  const barFront = keep(new THREE.MeshStandardMaterial({ color: SWATCHES.bar[0].color, roughness: 0.38, bumpMap: keep(tuftBump(24, 3)), bumpScale: 2.5 }));
   const targetColor: Record<ZoneId, THREE.Color> = {
     bar: new THREE.Color(SWATCHES.bar[0].color),
     booths: new THREE.Color(SWATCHES.booths[0].color),
@@ -297,6 +299,15 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   };
 
   const geo = <G extends THREE.BufferGeometry>(g: G) => keep(g);
+  // muchas piezas iguales = una sola llamada de dibujo
+  const inst = (g: THREE.BufferGeometry, m: THREE.Material, mats: THREE.Matrix4[]) => {
+    if (!mats.length) return;
+    const im = new THREE.InstancedMesh(g, m, mats.length);
+    mats.forEach((mt, i) => im.setMatrixAt(i, mt));
+    im.instanceMatrix.needsUpdate = true;
+    scene.add(im);
+  };
+  const M4 = (x: number, y: number, z: number, rx = 0) => new THREE.Matrix4().makeRotationX(rx).setPosition(x, y, z);
   const mesh = (g: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0, parent: THREE.Object3D = scene) => {
     const o = new THREE.Mesh(g, m);
     o.position.set(x, y, z);
@@ -383,19 +394,25 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   const shelfBack = keep(new THREE.MeshBasicMaterial({ color: '#3a2610', toneMapped: false }));
   mesh(geo(new THREE.PlaneGeometry(barLen, 2.2)), shelfBack, -W / 2 + 0.03, 2.1, barCz).rotation.y = Math.PI / 2;
   const bottleMats = ['#2c5e2e', '#6b3a12', '#d9c9a8', '#1c1c3a', '#7a1d1d', '#c9a962'].map((c) =>
-    keep(new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.05, transmission: mobile ? 0 : 0.6, thickness: 0.3, transparent: true, opacity: 0.92 }))
+    keep(new THREE.MeshStandardMaterial({ color: c, roughness: 0.08, metalness: 0.1, emissive: c, emissiveIntensity: 0.35 }))
   );
   const bottleG = geo(new THREE.CylinderGeometry(0.045, 0.05, 0.3, 12));
   const neckG = geo(new THREE.CylinderGeometry(0.014, 0.03, 0.12, 10));
   const r = rnd(21);
+  const bodies: THREE.Matrix4[][] = bottleMats.map(() => []);
+  const necks: THREE.Matrix4[][] = bottleMats.map(() => []);
   for (const y of [1.25, 1.9, 2.55]) {
     mesh(geo(new THREE.BoxGeometry(0.32, 0.03, barLen)), marbleNero, -W / 2 + 0.18, y, barCz);
     for (let z = barZ0 - 0.2; z > barZ1 + 0.2; z -= 0.16 + r() * 0.08) {
-      const m = bottleMats[Math.floor(r() * bottleMats.length)];
-      const b = mesh(bottleG, m, -W / 2 + 0.2, y + 0.165, z);
-      mesh(neckG, m, 0, 0.21, 0, b);
+      const k = Math.floor(r() * bottleMats.length);
+      bodies[k].push(M4(-W / 2 + 0.2, y + 0.165, z));
+      necks[k].push(M4(-W / 2 + 0.2, y + 0.375, z));
     }
   }
+  bottleMats.forEach((m, k) => {
+    inst(bottleG, m, bodies[k]);
+    inst(neckG, m, necks[k]);
+  });
   // banquetas de la barra
   const stoolSeat = geo(new THREE.CylinderGeometry(0.22, 0.2, 0.12, 28));
   const stoolBack = rbox(0.42, 0.28, 0.07, 0.03);
@@ -482,14 +499,15 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   mesh(geo(new THREE.PlaneGeometry(7, 3.2)), cavaGlow, 0, 1.9, Z1 + 0.02);
   const wineG = geo(new THREE.CylinderGeometry(0.035, 0.035, 0.28, 10));
   const wineMat = keep(new THREE.MeshStandardMaterial({ color: '#1a0b0b', roughness: 0.2, metalness: 0.2 }));
+  const wines: THREE.Matrix4[] = [];
+  const shelves: THREE.Matrix4[] = [];
   for (let row = 0; row < 9; row++) {
     const y = 0.55 + row * 0.33;
-    mesh(geo(new THREE.BoxGeometry(7, 0.02, 0.3)), walnut, 0, y - 0.05, Z1 + 0.16);
-    for (let x = -3.3; x <= 3.3; x += 0.11) {
-      const b = mesh(wineG, wineMat, x, y + 0.04, Z1 + 0.16);
-      b.rotation.x = Math.PI / 2;
-    }
+    shelves.push(M4(0, y - 0.05, Z1 + 0.16));
+    for (let x = -3.3; x <= 3.3; x += 0.11) wines.push(M4(x, y + 0.04, Z1 + 0.16, Math.PI / 2));
   }
+  inst(geo(new THREE.BoxGeometry(7, 0.02, 0.3)), walnut, shelves);
+  inst(wineG, wineMat, wines);
   for (const s of [-1, 1]) mesh(geo(new THREE.BoxGeometry(0.14, 3.4, 0.4)), gold, s * 3.6, 1.9, Z1 + 0.2);
   // mesa del comedor privado
   const dZ = -26.2;
@@ -542,7 +560,13 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   zoneSign(opts.labels.lounge, -W / 2 + 0.05, -21.4, Math.PI / 2);
   zoneSign(opts.labels.wine, 0, Z1 + 0.05, 0);
 
-  /* ---- luces ---- */
+  /* ---- luces ----
+     Cada luz puntual encarece todos los materiales: se guardan como anclas y solo
+     las más cercanas a la cámara se encienden (número fijo de luces reales). */
+  type Anchor = { color: THREE.Color; intensity: number; distance: number; decay: number; pos: THREE.Vector3 };
+  const anchors: Anchor[] = [];
+  const addLight = (color: string, intensity: number, distance: number, decay: number, x: number, y: number, z: number) =>
+    anchors.push({ color: new THREE.Color(color), intensity, distance, decay, pos: new THREE.Vector3(x, y, z) });
   scene.add(new THREE.HemisphereLight('#f3d9a8', '#120c06', 0.25));
   const pendantG = geo(new THREE.SphereGeometry(0.11, 20, 16));
   const pendantShade = geo(new THREE.CylinderGeometry(0.06, 0.2, 0.22, 24, 1, true));
@@ -553,11 +577,7 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
     (sh.material as THREE.Material).side = THREE.DoubleSide;
     const cord = mesh(cordG, blackLacquer, x, (H + y) / 2 + 0.1, z);
     cord.scale.y = H - y - 0.2;
-    if (light) {
-      const p = new THREE.PointLight('#ffcf8a', intensity, 7, 1.6);
-      p.position.set(x, y - 0.15, z);
-      scene.add(p);
-    }
+    if (light) addLight('#ffcf8a', intensity, 7, 1.6, x, y - 0.15, z);
   };
   // barra
   for (let i = 0; i < 6; i++) addPendant(barX + 0.1, 2.5, barZ0 - 0.6 - i * 1.1, i % 2 === 0);
@@ -568,26 +588,44 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
     const ring = mesh(geo(new THREE.TorusGeometry(rr, 0.03, 10, 64)), glow, loungeC.x, 3.0 - rr * 0.3, loungeC.z);
     ring.rotation.x = Math.PI / 2;
   }
-  const lp = new THREE.PointLight('#ffcf8a', 9, 9, 1.5);
-  lp.position.set(loungeC.x, 2.5, loungeC.z);
-  scene.add(lp);
+  addLight('#ffcf8a', 9, 9, 1.5, loungeC.x, 2.5, loungeC.z);
   // comedor privado
   for (const x of [-0.9, 0, 0.9]) addPendant(x, 2.2, dZ, x === 0, 7);
-  const cavaL = new THREE.PointLight('#ffb866', 6, 8, 1.4);
-  cavaL.position.set(0, 2.2, Z1 + 1.2);
-  scene.add(cavaL);
+  addLight('#ffb866', 6, 8, 1.4, 0, 2.2, Z1 + 1.2);
   // entrada
-  const entry = new THREE.PointLight('#ffd9a0', 10, 10, 1.4);
-  entry.position.set(0, 3.2, Z0 + 2.5);
-  scene.add(entry);
-  const hall = new THREE.PointLight('#ffcf8a', 4, 8, 1.6);
-  hall.position.set(0, 3.4, -2.5);
-  scene.add(hall);
+  addLight('#ffd9a0', 10, 10, 1.4, 0, 3.2, Z0 + 2.5);
+  addLight('#ffcf8a', 4, 8, 1.6, 0, 3.4, -2.5);
+  const SLOTS = mobile ? 3 : 4;
+  const slots = Array.from({ length: SLOTS }, () => {
+    const l = new THREE.PointLight('#ffcf8a', 0, 8, 1.5);
+    scene.add(l);
+    return { l, a: null as Anchor | null };
+  });
+  // asigna las anclas más cercanas; las que siguen cerca conservan su luz (sin saltos)
+  const assignLights = (from: THREE.Vector3) => {
+    const near = anchors
+      .map((a) => ({ a, d: a.pos.distanceToSquared(from) }))
+      .sort((x, y) => x.d - y.d)
+      .slice(0, SLOTS)
+      .map((x) => x.a);
+    const free = slots.filter((sl) => !sl.a || !near.includes(sl.a));
+    for (const a of near) {
+      if (slots.some((sl) => sl.a === a)) continue;
+      const sl = free.shift();
+      if (!sl) break;
+      sl.a = a;
+      sl.l.intensity = 0;
+      sl.l.color.copy(a.color);
+      sl.l.distance = a.distance;
+      sl.l.decay = a.decay;
+      sl.l.position.copy(a.pos);
+    }
+  };
   // tiras de luz en el techo
   for (const s of [-1, 1]) mesh(geo(new THREE.BoxGeometry(0.06, 0.02, L - 1)), glow, s * 2.6, H - 0.02, (Z0 + Z1) / 2);
 
   /* ---- partículas doradas (polvo en la luz) ---- */
-  const N = mobile ? 250 : 600;
+  const N = mobile ? 120 : 300;
   const pts = new Float32Array(N * 3);
   const pr = rnd(99);
   for (let i = 0; i < N; i++) {
@@ -675,15 +713,23 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
   ro.observe(canvas);
   resize();
 
+  assignLights(camera.position);
+  renderer.compile(scene, camera);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dir = new THREE.Vector3();
   const look = new THREE.Vector3();
   const clock = new THREE.Clock();
   let visible = true;
 
+  let dirty = 3;
+  let slowFrames = 0;
+  const prevPos = new THREE.Vector3(Infinity, 0, 0);
+  const prevLook = new THREE.Vector3();
+  const lightCheck = new THREE.Vector3(Infinity, 0, 0);
   renderer.setAnimationLoop(() => {
     if (!visible) return;
-    const dt = Math.min(clock.getDelta(), 0.05);
+    const raw = clock.getDelta();
+    const dt = Math.min(raw, 0.05);
     const k = reduce ? 1 : 1 - Math.pow(0.0015, dt);
     cPos.lerp(tPos, k);
     cLook.lerp(tLook, k);
@@ -701,22 +747,60 @@ export function createShowroom(canvas: HTMLCanvasElement, opts: { images: string
     // colores de tapicería con transición suave
     (Object.keys(upholstery) as ZoneId[]).forEach((z) => upholstery[z].color.lerp(targetColor[z], 0.08));
     barFront.color.lerp(targetColor.bar, 0.08);
-    if (!reduce) dust.rotation.y += dt * 0.004;
+    // luces: reasignar cuando la cámara avanza y fundir intensidades
+    if (cPos.distanceToSquared(lightCheck) > 0.25) {
+      assignLights(cPos);
+      lightCheck.copy(cPos);
+    }
+    let fading = false;
+    for (const sl of slots) {
+      const goal = sl.a ? sl.a.intensity : 0;
+      const ni = sl.l.intensity + (goal - sl.l.intensity) * Math.min(1, dt * 4);
+      const still = Math.abs(ni - goal) <= 0.02;
+      if (!still) fading = true;
+      sl.l.intensity = still ? goal : ni;
+    }
+    // cámara quieta y sin transiciones = no se dibuja
+    const moving = camera.position.distanceToSquared(prevPos) > 1e-7 || look.distanceToSquared(prevLook) > 1e-7;
+    const colorsMoving = (Object.keys(upholstery) as ZoneId[]).some((z) => {
+      const c = upholstery[z].color,
+        t = targetColor[z];
+      return Math.abs(c.r - t.r) + Math.abs(c.g - t.g) + Math.abs(c.b - t.b) > 0.002;
+    });
+    if (moving || colorsMoving || fading || dragging) dirty = 2;
+    prevPos.copy(camera.position);
+    prevLook.copy(look);
+    if (dirty <= 0) return;
+    dirty--;
     renderer.render(scene, camera);
+    // si el equipo no da, se baja la resolución (mínimo 0.75)
+    if (raw > 0.034) slowFrames++;
+    else slowFrames = Math.max(0, slowFrames - 1);
+    if (slowFrames > 20 && dpr > 0.75) {
+      dpr = Math.max(0.75, dpr - 0.25);
+      renderer.setPixelRatio(dpr);
+      resize();
+      slowFrames = 0;
+    }
   });
 
   return {
     setProgress(p) {
       progress = Math.min(1, Math.max(0, p));
       applyProgress();
+      dirty = 2;
     },
     setSwatch(zone, index) {
       const s = SWATCHES[zone][index];
       if (s) targetColor[zone].set(s.color);
+      dirty = 2;
     },
     setVisible(v) {
       visible = v;
-      if (v) clock.getDelta();
+      if (v) {
+        clock.getDelta();
+        dirty = 2;
+      }
     },
     dispose() {
       renderer.setAnimationLoop(null);

@@ -220,6 +220,16 @@ export function useReveals(deps: unknown[] = []) {
       ...document.querySelectorAll<HTMLElement>('main section:not(#showroom):not(:first-child) img'),
     ].filter((el) => !el.classList.contains('fx-in'));
     targets.forEach((el) => el.classList.add(el.tagName === 'IMG' ? 'fx-img' : 'fx-title'));
+    // rótulos de sección numerados con línea animada (como en HarrySound)
+    let n = 0;
+    document.querySelectorAll<HTMLElement>('main > section').forEach((sec) => {
+      const badge = sec.querySelector<HTMLElement>('span.text-gold.tracking-widest.uppercase, p.text-gold.uppercase');
+      if (!badge || sec.id === 'showroom') return;
+      n++;
+      badge.classList.add('fx-cue');
+      badge.dataset.n = String(n).padStart(2, '0');
+      targets.push(badge);
+    });
     const io = new IntersectionObserver(
       (es) => es.forEach((e) => {
         if (e.isIntersecting) {
@@ -258,8 +268,11 @@ export function Marquee({ words }: { words: string[] }) {
         boost = Math.min(12, Math.abs(s.getVelocity()) / 220);
       },
     });
+    let onScreen = false;
+    const io = new IntersectionObserver(([e]) => (onScreen = e.isIntersecting));
+    io.observe(el);
     const tick = () => {
-      if (reduced()) return;
+      if (reduced() || !onScreen) return;
       boost *= 0.94;
       x += dir * (0.6 + boost);
       const w = el.scrollWidth / 2;
@@ -268,7 +281,11 @@ export function Marquee({ words }: { words: string[] }) {
       el.style.transform = `translate3d(${x}px,0,0) skewX(${-dir * boost * 0.8}deg)`;
     };
     gsap.ticker.add(tick);
-    return () => { gsap.ticker.remove(tick); st.kill(); };
+    return () => {
+      io.disconnect();
+      gsap.ticker.remove(tick);
+      st.kill();
+    };
   }, []);
   const row = [...words, ...words];
   return (
